@@ -89,3 +89,19 @@ end
     sgtitle(['Lowpass Exponential Responses: Frequency = ', num2str(freq), 'Hz']);
 end
 %% Bode Plot
+freqRange = logspace(1,4,100);
+mag = zeros(size(freqRange));
+phase = zeros(size(freqRange));
+
+for i = 1:length(freqRange)
+    freq = freqRange(i);
+    angularFreq = 2*pi*freq;
+
+    % Compute complex gain H(jω)
+    H = freqs(1, [tau,1], angularFreq);
+
+    % Compute magnitude in dB and phase normalized by π
+    mag(i) = 20*log10(abs(H));
+    phase(i) = angle(H)/pi;
+end
+
