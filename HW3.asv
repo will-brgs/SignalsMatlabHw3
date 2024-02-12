@@ -19,7 +19,7 @@ for i = 1:2
 freq = freqVals(i);
 angularFreq = 2*pi*freq;
 
-sampleTimes = 0:samplePeriod:15*tau;
+sampleTimes = 0:samplePeriod:3*tau;
 %inputFunct = zeros(1,length(timePoints));
 inputFunct = exp(1j*angularFreq*sampleTimes);
 
@@ -88,20 +88,39 @@ end
     legend('Input', 'Output');
     sgtitle(['Lowpass Exponential Responses: Frequency = ', num2str(freq), 'Hz']);
 end
-%% Bode Plot
+%% Part 2 Bode Plot
 freqRange = logspace(1,4,100);
-mag = zeros(size(freqRange));
-phase = zeros(size(freqRange));
+mag_Hi = zeros(size(freqRange));
+phase_Hi = mag_Hi;
+mag_Lo = mag_Hi;
+phase_Lo = mag_Hi;
+
+
+H_Hi = zeros(length(freqRange));
+H_Lo = zeros(length(freqRange));
 
 for i = 1:length(freqRange)
-    freq = freqRange(i);
-    angularFreq = 2*pi*freq;
+    %Initialize input funct
+        LCCDE_Lo = zeros(length(sampleTimes),1);
+    
+    for n = 2:length(sampleTimes)
+        LCCDE_Lo(n) = (1-samplePeriod/tau)*(LCCDE_Lo(n-1)) + samplePeriod/(tau)*inputFunct(n-1);
+    end
+    
+    %LCCDE Highpass
+    LCCDE_Hi = zeros(length(sampleTimes),1);
+    for n = 2:length(sampleTimes)
+        LCCDE_Hi(n) = inputFunct(n) - inputFunct(n-1) - (LCCDE_Hi(n-1) * ((samplePeriod/tau) -1));
+    end
 
-    % Compute complex gain H(jω)
-    H = freqs(0, [tau,1], angularFreq);
-
+    % Comput H for lowpass
+    H_Lo(i) = inputFunct / LCCDE_Lo.';
+    H_Hi(i) = inputFunct / LCCDE_Hi.';
     % Compute magnitude in dB and phase normalized by π
-    mag(i) = 20*log10(abs(H));
-    phase(i) = angle(H)/pi;
+%     mag_Hi(i) = 20*log10(abs(H_Hi));
+%     phase_Hi(i) = angle(H_Hi)/pi;
+% 
+%     mag_Lo(i) = 20*log10(abs(H_Hi));
+%     phase_Lo(i) = angle(H_Hi)/pi;
 end
 
