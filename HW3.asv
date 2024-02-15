@@ -19,22 +19,17 @@ for i = 1:2
 freq = freqVals(i);
 angularFreq = 2*pi*freq;
 
-sampleTimes = 0:samplePeriod:3*tau;
+sampleTimes = 0:samplePeriod:15*(1/freq);
 %inputFunct = zeros(1,length(timePoints));
 inputFunct = exp(1j*angularFreq*sampleTimes);
 
 %LCCDE Lowpass
-LCCDE_Lo = zeros(length(sampleTimes),1);
 
-for n = 2:length(sampleTimes)
-    LCCDE_Lo(n) = (1-samplePeriod/tau)*(LCCDE_Lo(n-1)) + samplePeriod/(tau)*inputFunct(n-1);
-end
+LCCDE_Lo = lsim(1/tau , [1 ,1/tau], inputFunct,sampleTimes);
 
 %LCCDE Highpass
-LCCDE_Hi = zeros(length(sampleTimes),1);
-for n = 2:length(sampleTimes)
-    LCCDE_Hi(n) = inputFunct(n) - inputFunct(n-1) - (LCCDE_Hi(n-1) * ((samplePeriod/tau) -1));
-end
+
+LCCDE_Hi = lsim([1 0] , [1 ,1/tau], inputFunct,sampleTimes);
 
  % Create subplots
  %plot lowpass
@@ -86,41 +81,94 @@ end
     xlabel('Time(s)');
     ylabel('Output');
     legend('Input', 'Output');
-    sgtitle(['Lowpass Exponential Responses: Frequency = ', num2str(freq), 'Hz']);
+    sgtitle(['Highpass Exponential Responses: Frequency = ', num2str(freq), 'Hz']);
 end
 %% Part 2 Bode Plot
 freqRange = logspace(1,4,100);
-mag_Hi = zeros(size(freqRange));
-phase_Hi = mag_Hi;
-mag_Lo = mag_Hi;
-phase_Lo = mag_Hi;
+sampleTimes = 0:samplePeriod:15*tau; %Sim to 15tau for bettter steady state
 
-
-H_Hi = zeros(length(freqRange));
-H_Lo = zeros(length(freqRange));
+H_Hi = zeros(length(freqRange),1);
+H_Lo = zeros(length(freqRange),1);
 
 for i = 1:length(freqRange)
-    %Initialize input funct
-        LCCDE_Lo = zeros(length(sampleTimes),1);
-    
-    for n = 2:length(sampleTimes)
-        LCCDE_Lo(n) = (1-samplePeriod/tau)*(LCCDE_Lo(n-1)) + samplePeriod/(tau)*inputFunct(n-1);
-    end
-    
+    angularFreq = freqRange(i);
+    inputFunct = exp(1j*angularFreq*sampleTimes);
+
+    %Lsim Highpass
+    LCCDE_Lo = lsim(1/tau , [1 ,1/tau], inputFunct,sampleTimes);
+
     %LCCDE Highpass
     LCCDE_Hi = zeros(length(sampleTimes),1);
     for n = 2:length(sampleTimes)
         LCCDE_Hi(n) = inputFunct(n) - inputFunct(n-1) - (LCCDE_Hi(n-1) * ((samplePeriod/tau) -1));
     end
 
-    % Comput H for lowpass
-    H_Lo(i) = inputFunct / LCCDE_Lo.';
-    H_Hi(i) = inputFunct / LCCDE_Hi.';
-    % Compute magnitude in dB and phase normalized by π
-%     mag_Hi(i) = 20*log10(abs(H_Hi));
-%     phase_Hi(i) = angle(H_Hi)/pi;
-% 
-%     mag_Lo(i) = 20*log10(abs(H_Hi));
-%     phase_Lo(i) = angle(H_Hi)/pi;
-end
+    % Compute H, assume steady state at index 660
+    H_Lo(i) = inputFunct(end) / LCCDE_Lo(end);
+    H_Hi(i) = inputFunct(end) / LCCDE_Hi(end);
+    % Compute magnitude in dB and phase normalized by pi
 
+end
+%Calc for Highpass
+mag_Hi = 20*log10(abs(H_Hi));
+phase_Hi = angle((H_Hi)/pi);
+
+%Calc for Lowpass
+mag_Lo = 20*log10(abs(H_Lo));
+phase_Lo = angle((H_Lo)/pi);
+
+%Plot
+figure;
+hold on
+subplot(4, 1, 1);
+semilogx(freqRange, mag_Lo, LineWidth=1.5);
+title('Lowpass Magnitude');
+xlabel('Frequency (Hz)');
+ylabel('Output (dB)');
+    
+subplot(4, 1, 2);
+semilogx(freqRange, mag_Hi, LineWidth=1.5);
+title('HighPass Magnitude');
+xlabel('Frequency (Hz)');
+ylabel('Output (dB)');
+    
+subplot(4, 1, 3);
+semilogx(freqRange, phase_Lo, LineWidth=1.5);
+title('LowPass Phase');
+xlabel('Frequency (Hz)');
+ylabel('Output');
+
+subplot(4, 1, 4);
+semilogx(freqRange, phase_Hi, LineWidth=1.5);
+title('HighPass Phase');
+xlabel('Frequency (Hz)');
+ylabel('Output');
+sgtitle('Bode Plot Outputs of High and Lowpass Filters with Varying Frequency');
+hold off
+%% Part 3: DC to AC Converter
+sampleFreq = 10e3;% New sample freq in Hz
+samplePeriod = 1/sampleFreq;
+frequency = 60; % freq in hz
+R = 1e3;
+C = 1/(2*pi*frequency*R);
+tau = R*C;
+
+sampleTimes = 0:samplePeriod:100*tau;
+% Generate input square wave
+square = square(2*pi*freq*sampleTimes);
+inputFunct = square;
+
+output = filter(1/tau,[1 1/tau], inputFunct); % Derrived from HW2, LowPass
+
+LCCDE_Lo = zeros(length(sampleTimes),1);
+
+% Pass signal through RC Lowpass filter 3 seperate times
+for i = 1:3
+    LCCDE_Lo = lsim(1/tau , [1 ,1/tau], inputFunct,sampleTimes);
+
+
+inputFunct = LCCDE_Lo;
+end
+sineOutput = LCCDE_Lo;
+figure
+plot(sineOutput);
