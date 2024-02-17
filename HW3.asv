@@ -25,32 +25,32 @@ inputFunct = exp(1j*angularFreq*sampleTimes);
 
 %LCCDE Lowpass
 
-LCCDE_Lo = lsim(1/tau , [1 ,1/tau], inputFunct,sampleTimes);
+lsim_Lo = lsim(1/tau , [1 ,1/tau], inputFunct,sampleTimes);
 
 %LCCDE Highpass
 
-LCCDE_Hi = lsim([1 0] , [1 ,1/tau], inputFunct,sampleTimes);
+lsim_Hi = lsim([1 0] , [1 ,1/tau], inputFunct,sampleTimes);
 
  % Create subplots
  %plot lowpass
     figure;
     hold on
     subplot(3, 1, 1);
-    plot(sampleTimes, abs(inputFunct), 'b', sampleTimes, abs(LCCDE_Lo), 'r');
+    plot(sampleTimes, abs(inputFunct), 'b', sampleTimes, abs(lsim_Lo), 'r');
     title('Magnitude');
     xlabel('Time(s)');
     ylabel('Output');
     legend('Input', 'Output');
     
     subplot(3, 1, 2);
-    plot(sampleTimes, real(inputFunct), 'b', sampleTimes, real(LCCDE_Lo), 'r');
+    plot(sampleTimes, real(inputFunct), 'b', sampleTimes, real(lsim_Lo), 'r');
     title('Real Part');
     xlabel('Time(s)');
     ylabel('Output');
     legend('Input', 'Output');
     
     subplot(3, 1, 3);
-    plot(sampleTimes, imag(inputFunct), 'b', sampleTimes, imag(LCCDE_Lo), 'r');
+    plot(sampleTimes, imag(inputFunct), 'b', sampleTimes, imag(lsim_Lo), 'r');
     title('Imaginary Part');
     legend('Input', 'Output');
     xlabel('Time(s)');
@@ -62,21 +62,21 @@ LCCDE_Hi = lsim([1 0] , [1 ,1/tau], inputFunct,sampleTimes);
     figure;
     hold on
     subplot(3, 1, 1);
-    plot(sampleTimes, abs(inputFunct), 'b', sampleTimes, abs(LCCDE_Hi), 'r');
+    plot(sampleTimes, abs(inputFunct), 'b', sampleTimes, abs(lsim_Hi), 'r');
     title('Magnitude');
     xlabel('Time(s)');
     ylabel('Output');
     legend('Input', 'Output');
     
     subplot(3, 1, 2);
-    plot(sampleTimes, real(inputFunct), 'b', sampleTimes, real(LCCDE_Hi), 'r');
+    plot(sampleTimes, real(inputFunct), 'b', sampleTimes, real(lsim_Hi), 'r');
     title('Real Part');
     xlabel('Time(s)');
     ylabel('Output');
     legend('Input', 'Output');
     
     subplot(3, 1, 3);
-    plot(sampleTimes, imag(inputFunct), 'b', sampleTimes, imag(LCCDE_Hi), 'r');
+    plot(sampleTimes, imag(inputFunct), 'b', sampleTimes, imag(lsim_Hi), 'r');
     title('Imaginary Part');
     xlabel('Time(s)');
     ylabel('Output');
@@ -85,7 +85,7 @@ LCCDE_Hi = lsim([1 0] , [1 ,1/tau], inputFunct,sampleTimes);
 end
 %% Part 2 Bode Plot
 freqRange = logspace(1,4,100);
-sampleTimes = 0:samplePeriod:15*tau; %Sim to 15tau for bettter steady state
+sampleTimes = 0:samplePeriod:2; %Sim to 15tau for bettter steady state
 
 H_Hi = zeros(length(freqRange),1);
 H_Lo = zeros(length(freqRange),1);
@@ -94,21 +94,20 @@ for i = 1:length(freqRange)
     angularFreq = freqRange(i);
     inputFunct = exp(1j*angularFreq*sampleTimes);
 
-    %Lsim Highpass
-    LCCDE_Lo = lsim(1/tau , [1 ,1/tau], inputFunct,sampleTimes);
+    %Lsim Lowpass
+    lsim_Lo = lsim(1/tau , [1 ,1/tau], inputFunct,sampleTimes);
 
-    %LCCDE Highpass
-    LCCDE_Hi = zeros(length(sampleTimes),1);
-    for n = 2:length(sampleTimes)
-        LCCDE_Hi(n) = inputFunct(n) - inputFunct(n-1) - (LCCDE_Hi(n-1) * ((samplePeriod/tau) -1));
-    end
+    %Lsim Highpass
+    lsim_Hi = lsim([1 0] , [1 ,1/tau], inputFunct,sampleTimes);
+
 
     % Compute H, assume steady state at index 660
-    H_Lo(i) = inputFunct(end) / LCCDE_Lo(end);
-    H_Hi(i) = inputFunct(end) / LCCDE_Hi(end);
+    H_Lo(i) =  lsim_Lo(end) / inputFunct(end);
+    H_Hi(i) =  lsim_Hi(end) / inputFunct(end);
     % Compute magnitude in dB and phase normalized by pi
 
 end
+
 %Calc for Highpass
 mag_Hi = 20*log10(abs(H_Hi));
 phase_Hi = angle((H_Hi)/pi);
@@ -149,26 +148,58 @@ hold off
 sampleFreq = 10e3;% New sample freq in Hz
 samplePeriod = 1/sampleFreq;
 frequency = 60; % freq in hz
+tau = 1/(2*pi*frequency);
 R = 1e3;
-C = 1/(2*pi*frequency*R);
-tau = R*C;
+C = tau/R;
 
-sampleTimes = 0:samplePeriod:100*tau;
+sampleTimes = 0:samplePeriod:50*tau;
+
 % Generate input square wave
-square = square(2*pi*freq*sampleTimes);
-inputFunct = square;
+sq = square(2*pi*freq*sampleTimes);
+inputFunct = sq;
 
-output = filter(1/tau,[1 1/tau], inputFunct); % Derrived from HW2, LowPass
-
-LCCDE_Lo = zeros(length(sampleTimes),1);
-
+a = [1, samplePeriod/tau-1];
+b = samplePeriod/tau;
 % Pass signal through RC Lowpass filter 3 seperate times
 for i = 1:3
-    LCCDE_Lo = lsim(1/tau , [1 ,1/tau], inputFunct,sampleTimes);
+output = output + filter(b,a,inputFunct);
 
-
-inputFunct = LCCDE_Lo;
+inputFunct = output;
 end
-sineOutput = LCCDE_Lo;
-figure
+
+sineOutput = output;
+figure()
 plot(sineOutput);
+%%
+% Define parameters
+sampleFreq = 10e3;
+samplePeriod = 1/sampleFreq;
+frequency = 60;      % Desired frequency in Hz
+tau = 1/(2*pi*frequency);
+R = 1e3;
+C = tau/R;
+
+sampleTimes = 0:samplePeriod:50*tau;
+
+% Generate square wave
+sq = square(2*pi*frequency*sampleTimes);
+inputFunct = sq;
+
+%Filter Coeffs
+a = [1, -exp(-samplePeriod/tau)];
+b = 1 - (-exp(-samplePeriod/tau));
+
+% Pass signal through RC Lowpass filter 3 separate times
+output = zeros(size(inputFunct));
+for i = 1:3
+output = output + filter(b, a, inputFunct);
+
+inputFunct = output;
+end
+
+% Plot the output
+figure()
+plot(sampleTimes, output);
+xlabel('Time')
+ylabel('Output')
+title('Filtered Output')

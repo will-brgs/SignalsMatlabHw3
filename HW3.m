@@ -151,21 +151,55 @@ frequency = 60; % freq in hz
 tau = 1/(2*pi*frequency);
 R = 1e3;
 C = tau/R;
-% tau = R*C;
 
-sampleTimes = 0:samplePeriod:10*tau;
+sampleTimes = 0:samplePeriod:50*tau;
+
 % Generate input square wave
 sq = square(2*pi*freq*sampleTimes);
 inputFunct = sq;
 
-
+a = [1, samplePeriod/tau-1];
+b = samplePeriod/tau;
 % Pass signal through RC Lowpass filter 3 seperate times
 for i = 1:3
-%lsim_Lo = lsim(1/tau , [1 ,1/tau], inputFunct,sampleTimes);
-output = filter(1/tau,[1, 1/tau], inputFunct); % Derrived from HW1, LowPass
+output = output + filter(b,a,inputFunct);
 
 inputFunct = output;
 end
+
 sineOutput = output;
-figure
+figure()
 plot(sineOutput);
+%%
+% Define parameters
+sampleFreq = 10e3;
+samplePeriod = 1/sampleFreq;
+frequency = 60;      % Desired frequency in Hz
+tau = 1/(2*pi*frequency);
+R = 1e3;
+C = tau/R;
+
+sampleTimes = 0:samplePeriod:50*tau;
+
+% Generate square wave
+sq = square(2*pi*frequency*sampleTimes);
+inputFunct = sq;
+
+%Filter Coeffs
+a = [1, -exp(-samplePeriod/tau)];
+b = 1 - (-exp(-samplePeriod/tau));
+
+% Pass signal through RC Lowpass filter 3 separate times
+output = zeros(size(inputFunct));
+for i = 1:3
+output = output + filter(b, a, inputFunct);
+
+inputFunct = output;
+end
+
+% Plot the output
+figure()
+plot(sampleTimes, output);
+xlabel('Time (s)')
+ylabel('Output (V)')
+title('AC Wave Output')
