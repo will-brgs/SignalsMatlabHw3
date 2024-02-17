@@ -144,33 +144,8 @@ xlabel('Frequency (Hz)');
 ylabel('Output');
 sgtitle('Bode Plot Outputs of High and Lowpass Filters with Varying Frequency');
 hold off
+
 %% Part 3: DC to AC Converter
-sampleFreq = 10e3;% New sample freq in Hz
-samplePeriod = 1/sampleFreq;
-frequency = 60; % freq in hz
-tau = 1/(2*pi*frequency);
-R = 1e3;
-C = tau/R;
-
-sampleTimes = 0:samplePeriod:50*tau;
-
-% Generate input square wave
-sq = square(2*pi*freq*sampleTimes);
-inputFunct = sq;
-
-a = [1, samplePeriod/tau-1];
-b = samplePeriod/tau;
-% Pass signal through RC Lowpass filter 3 seperate times
-for i = 1:3
-output = output + filter(b,a,inputFunct);
-
-inputFunct = output;
-end
-
-sineOutput = output;
-figure()
-plot(sineOutput);
-%%
 % Define parameters
 sampleFreq = 10e3;
 samplePeriod = 1/sampleFreq;
@@ -199,7 +174,9 @@ end
 
 % Plot the output
 figure()
+plot(sampleTimes, sq);
 plot(sampleTimes, output);
 xlabel('Time (s)')
 ylabel('Output (V)')
-title('AC Wave Output')
+title('DC to AC Converter Vout')
+legend('Input', 'Output');
