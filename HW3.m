@@ -185,9 +185,10 @@ title('DC to AC Converter Vout CUTOFF = 120HZ')
 legend('Input', 'Output');
 hold off
 %% Part 3C: Power Efficiency
-Pin = (1/(sampleTimes(frequency))) * sum(sq(end-frequency:end).^2);
+Pin = (1/samplePeriod) * sum(sq(end-sampleFreq*(1/frequency):end).^2);
+% 218 ish datapoints per period
 
-Pout = (1/(sampleTimes(frequency))) * sum(output(end-frequency:end).^2);
+Pout = (1/samplePeriod) * sum(output(end-sampleFreq*(1/frequency):end).^2);
 
 efficiency = Pout/Pin;
 fprintf('Efficiency: %f\n', efficiency)
@@ -195,57 +196,43 @@ fprintf('Efficiency: %f\n', efficiency)
 %% Part 3B : Bode Plot
 freqRange = logspace(1,4,100);
 
-H_Hi = zeros(length(freqRange),1);
+H = zeros(length(freqRange),1);
 for i = 1:length(freqRange)
     frequency = freqRange(i);
-    
+    sq = square(2*pi*frequency*sampleTimes);
+    inputFunct = sq;
 
     % Pass signal through RC Lowpass filter 3 separate times
     output = zeros(size(inputFunct));
-    for j = 1:3
-    output = output + filter(b, a, inputFunct);
+    for j = 1:6
+    output = filter(b, a, inputFunct);
     
     inputFunct = output;
     end
 
-    % Compute H, assume steady state at index 660
-    H_Lo(i) =  lsim_Lo(end) / sq(end);
-    H_Hi(i) =  lsim_Hi(end) / sq(end);
+    % Compute H, assume steady state at end
+    H(i) =  output(end) / sq(end);
     % Compute magnitude in dB and phase normalized by pi
 
 end
 
-
-
 %Calc for Lowpass
-mag = 20*log10(abs(H_Lo));
-phase = angle((H_Lo)/pi);
+mag = 20*log10(abs(H));
+phase = angle((H)/pi);
 
 %Plot
 figure;
 hold on
-subplot(4, 1, 1);
-semilogx(freqRange, mag_Lo, LineWidth=1.5);
-title('Lowpass Magnitude');
+subplot(2, 1, 1);
+semilogx(freqRange, mag, LineWidth=1.5);
+title('Bode Magnitude');
 xlabel('Frequency (Hz)');
 ylabel('Output (dB)');
     
-subplot(4, 1, 2);
-semilogx(freqRange, mag_Hi, LineWidth=1.5);
-title('HighPass Magnitude');
-xlabel('Frequency (Hz)');
-ylabel('Output (dB)');
-    
-subplot(4, 1, 3);
-semilogx(freqRange, phase_Lo, LineWidth=1.5);
-title('LowPass Phase');
+subplot(2, 1, 2);
+semilogx(freqRange, phase, LineWidth=1.5);
+title('Bode Phase');
 xlabel('Frequency (Hz)');
 ylabel('Output');
-
-subplot(4, 1, 4);
-semilogx(freqRange, phase_Hi, LineWidth=1.5);
-title('HighPass Phase');
-xlabel('Frequency (Hz)');
-ylabel('Output');
-sgtitle('Bode Plot Outputs of High and Lowpass Filters with Varying Frequency');
+sgtitle('Bode Plot Output of DC to AC Converter with Varying Frequency');
 hold off
