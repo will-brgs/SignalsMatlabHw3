@@ -150,33 +150,102 @@ hold off
 sampleFreq = 10e3;
 samplePeriod = 1/sampleFreq;
 frequency = 60;      % Desired frequency in Hz
-tau = 1/(2*pi*frequency);
-R = 1e3;
-C = tau/R;
 
-sampleTimes = 0:samplePeriod:50*tau;
+cutoff = 160;
+C = 10e-6;
+R = 1/(2*pi*cutoff*C);
+tau = R*C;
+
+sampleTimes = 0:samplePeriod:20 *(1/frequency);
 
 % Generate square wave
 sq = square(2*pi*frequency*sampleTimes);
 inputFunct = sq;
 
 %Filter Coeffs
-a = [1, -exp(-samplePeriod/tau)];
-b = 1 - (-exp(-samplePeriod/tau));
+a = [1, samplePeriod/tau-1];
+b = samplePeriod/tau;
 
-% Pass signal through RC Lowpass filter 3 separate times
+% Pass signal through RC Lowpass filter 6 separate times
 output = zeros(size(inputFunct));
-for i = 1:3
-output = output + filter(b, a, inputFunct);
+for i = 1:6
+output = filter(b, a, inputFunct);
 
 inputFunct = output;
 end
 
 % Plot the output
 figure()
+hold on
 plot(sampleTimes, sq);
 plot(sampleTimes, output);
 xlabel('Time (s)')
 ylabel('Output (V)')
-title('DC to AC Converter Vout')
+title('DC to AC Converter Vout CUTOFF = 120HZ')
 legend('Input', 'Output');
+hold off
+%% Part 3C: Power Efficiency
+Pin = (1/(sampleTimes(frequency))) * sum(sq(end-frequency:end).^2);
+
+Pout = (1/(sampleTimes(frequency))) * sum(output(end-frequency:end).^2);
+
+efficiency = Pout/Pin;
+fprintf('Efficiency: %f\n', efficiency)
+
+%% Part 3B : Bode Plot
+freqRange = logspace(1,4,100);
+
+H_Hi = zeros(length(freqRange),1);
+for i = 1:length(freqRange)
+    frequency = freqRange(i);
+    
+
+    % Pass signal through RC Lowpass filter 3 separate times
+    output = zeros(size(inputFunct));
+    for j = 1:3
+    output = output + filter(b, a, inputFunct);
+    
+    inputFunct = output;
+    end
+
+    % Compute H, assume steady state at index 660
+    H_Lo(i) =  lsim_Lo(end) / sq(end);
+    H_Hi(i) =  lsim_Hi(end) / sq(end);
+    % Compute magnitude in dB and phase normalized by pi
+
+end
+
+
+
+%Calc for Lowpass
+mag = 20*log10(abs(H_Lo));
+phase = angle((H_Lo)/pi);
+
+%Plot
+figure;
+hold on
+subplot(4, 1, 1);
+semilogx(freqRange, mag_Lo, LineWidth=1.5);
+title('Lowpass Magnitude');
+xlabel('Frequency (Hz)');
+ylabel('Output (dB)');
+    
+subplot(4, 1, 2);
+semilogx(freqRange, mag_Hi, LineWidth=1.5);
+title('HighPass Magnitude');
+xlabel('Frequency (Hz)');
+ylabel('Output (dB)');
+    
+subplot(4, 1, 3);
+semilogx(freqRange, phase_Lo, LineWidth=1.5);
+title('LowPass Phase');
+xlabel('Frequency (Hz)');
+ylabel('Output');
+
+subplot(4, 1, 4);
+semilogx(freqRange, phase_Hi, LineWidth=1.5);
+title('HighPass Phase');
+xlabel('Frequency (Hz)');
+ylabel('Output');
+sgtitle('Bode Plot Outputs of High and Lowpass Filters with Varying Frequency');
+hold off
