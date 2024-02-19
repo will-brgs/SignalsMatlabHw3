@@ -203,23 +203,27 @@ fprintf('Efficiency: %f\n', efficiency)
 freqRange = logspace(1,4,100);
 
 H = zeros(length(freqRange),1);
+sampleTimes = 0:samplePeriod:10*(1/frequency); %10 period simulation
 for i = 1:length(freqRange)
     frequency = freqRange(i);
-    sq = square(2*pi*frequency*sampleTimes);
+    sq = zeros(size(sampleTimes));
+
+    for n = 1:2:300  % only odd
+    sq = sq + (1/n) * exp(1j * 2*pi * frequency * n * sampleTimes);
+    end
+    sq = 1.2 * sq; % Scale output square wave to have amplitude of 1
     inputFunct = sq;
 
-    % Pass signal through RC Lowpass filter 3 separate times
+    % Pass signal through RC Lowpass filter 6 separate times
     for j = 1:6
     output = filter(b, a, inputFunct);
     
     inputFunct = output;
     end
-
     %Cutoff first section, only want steady state
-    output = output(1000:end);
-    sq = sq(1000:end);
     % Compute H, assume steady state at end
-    H(i) =  max(output) / max(sq);
+    H(i) =  output(end) / sq(end);
+    %H(i) = output(end) / sq(end);
     % Compute magnitude in dB and phase normalized by pi
 
 end
@@ -241,6 +245,19 @@ subplot(2, 1, 2);
 semilogx(freqRange, phase, LineWidth=1.5);
 title('Bode Phase');
 xlabel('Frequency (Hz)');
-ylabel('Output');
+ylabel('Output (Radians)');
 sgtitle('Bode Plot Output of DC to AC Converter with Varying Frequency');
 hold off
+%%
+frequency = 2;          % Frequency of the square wave in Hz
+duration = 1;           % Duration of the square wave in seconds
+num_samples = 1000;     % Number of samples
+
+% Time vector
+t = linspace(0, duration, num_samples);
+
+% Create square wave using complex exponentials
+sq = zeros(size(t));
+for n = 1:2:11  % Consider only odd harmonics for simplicity
+    sq = sq + (1/n) * exp(1j * 2 *pi * frequency * n * t);
+end
