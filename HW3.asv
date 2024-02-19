@@ -184,10 +184,17 @@ title('DC to AC Converter')
 legend('Input', 'Output');
 hold off
 %% Part 3C: Power Efficiency
-Pin = (1/samplePeriod) * sum(sq(end-sampleFreq*(1/frequency):end).^2);
+%Cut off first initial spike of the power, only interested in steady state
+sq = sq(1000:end);
+output = output(1000:end);
+Pin = (1/samplePeriod) * sum(sq(1:end).^2);
+Pout = (1/samplePeriod) * sum(output(1:end).^2);
+
+
+%Pin = (1/samplePeriod) * sum(sq(end-sampleFreq*(1/frequency):end).^2);
 % 218 ish datapoints per period
 
-Pout = (1/samplePeriod) * sum(output(end-sampleFreq*(1/frequency):end).^2);
+%Pout = (1/samplePeriod) * sum(output(end-sampleFreq*(1/frequency):end).^2);
 
 efficiency = Pout/Pin;
 fprintf('Efficiency: %f\n', efficiency)
@@ -202,15 +209,17 @@ for i = 1:length(freqRange)
     inputFunct = sq;
 
     % Pass signal through RC Lowpass filter 3 separate times
-    output = zeros(size(inputFunct));
     for j = 1:6
     output = filter(b, a, inputFunct);
     
     inputFunct = output;
     end
 
+    %Cutoff first section, only want steady state
+    output = output(1000:end);
+    sq = sq(1000:end);
     % Compute H, assume steady state at end
-    H(i) =  output(end) / sq(end);
+    H(i) =  max(output) / max(sq);
     % Compute magnitude in dB and phase normalized by pi
 
 end
