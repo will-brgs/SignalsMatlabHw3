@@ -213,8 +213,6 @@ for i = 1:length(freqRange)
     end
     sq = 1.2 * sq; % Scale output square wave to have amplitude of 1
     inputFunct = sq;
-    figure, plot(re(sq))
-
     % Pass signal through RC Lowpass filter 6 separate times
     for j = 1:6
     output = filter(b, a, inputFunct);
