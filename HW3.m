@@ -203,28 +203,24 @@ fprintf('Efficiency: %f\n', efficiency)
 freqRange = logspace(1,4,100);
 
 H = zeros(length(freqRange),1);
-sampleTimes = 0:samplePeriod:10*(1/frequency); %10 period simulation
+sampleTimes = 0:samplePeriod:0.5; %2 seconds
+
 for i = 1:length(freqRange)
     frequency = freqRange(i);
-    sq = zeros(size(sampleTimes));
 
-    for n = 1:2:300  % only odd
-    sq = sq + (1/n) * exp(1j * 2*pi * frequency * n * sampleTimes);
-    end
-    sq = 1.2 * sq; % Scale output square wave to have amplitude of 1
-    inputFunct = sq;
+    inputFunct = exp(1j*frequency*sampleTimes);
+    in = inputFunct;
     % Pass signal through RC Lowpass filter 6 separate times
     for j = 1:6
-    output = filter(b, a, inputFunct);
+    output = filter(b, a, in);
     
-    inputFunct = output;
+    in = output;
     end
     %Cutoff first section, only want steady state
     % Compute H, assume steady state at end
     H(i) =  output(end) / sq(end);
     %H(i) = output(end) / sq(end);
     % Compute magnitude in dB and phase normalized by pi
-
 end
 
 %Calc for Lowpass
