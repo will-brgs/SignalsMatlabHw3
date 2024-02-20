@@ -187,31 +187,17 @@ hold off
 %Cut off first initial spike of the power, only interested in steady state
 sq = sq(1000:end);
 output = output(1000:end);
-Pin = (1/samplePeriod) * sum(sq(1:end).^2);
-Pout = (1/samplePeriod) * sum(output(1:end).^2);
+Pin = sum(sq(1:end).^2);
+Pout = sum(output(1:end).^2);
 
 efficiency = Pout/Pin;
 fprintf('Efficiency Via Integral: %f\n', efficiency*100)
 
-% Calculate via Fourier Coeffs
-
-P_output = 0; % Initialize output power
-% Given parameters
-
-% Calculate power in the 60Hz component of the square wave
-Pfs = 0; 
-for n = 1:2:frequency*2 % odd harmonics only
-    Pfs = Pfs + (1/n^2); % Summing up the powers of individual harmonics
-end
-
-% Calculate efficiency
-efficiency = P_output / Pfs;
-
-fprintf('Efficiency of the circuit compared to theoretical maximum: %.2f%%\n', efficiency * 100);
-
-
-% Calculate efficiency
-efficiency = P_output / (length(freqRange) * Pfs);
+% al for the sinc function is 
+% power efficiency = (2a1)^2/Pin
+% Pin = 1
+a = 7/6*pi;
+fprintf('Theoretical Max Efficiency Via Fourier Series: %f\n', (2*a)^2)
 
 %% Part 3B : Bode Plot
 
