@@ -213,39 +213,29 @@ fprintf('Efficiency of the circuit compared to theoretical maximum: %.2f%%\n', e
 % Calculate efficiency
 efficiency = P_output / (length(freqRange) * Pfs);
 
-
-
 %% Part 3B : Bode Plot
-freqRange = logspace(1,4,100);
 
-H = zeros(length(freqRange),1);
 sampleTimes = 0:samplePeriod:0.5; %2 seconds
 
-for i = 1:length(freqRange)
-    frequency = freqRange(i);
+frequencyRange = logspace(1,4,100);
 
-    inputFunct = exp(1j*frequency*sampleTimes);
-    in = inputFunct;
-    % Pass signal through RC Lowpass filter 6 separate times
-    for j = 1:6
-        
-    output = lsim(1/tau , [1 ,1/tau], in,sampleTimes);
+H = zeros(size(frequencyRange));
+for i = 1:length(frequencyRange)
 
-    
-    in = output;
+    squareInput = exp(1i*frequencyRange(i)*sampleTimes);
+
+    outputForBode = squareInput;
+    for n = 1:6 % 6 low pass fiters
+        outputForBode = lsim(1/tau,[1 1/tau],outputForBode,sampleTimes);
     end
-    %Cutoff first section, only want steady state
-    % Compute H, assume steady state at end
-    H(i) =  output(end) / sq(end);
-    %H(i) = output(end) / sq(end);
-    % Compute magnitude in dB and phase normalized by pi
+
+    H(i) = outputForBode(end)/squareInput(end);
+
 end
+mag = 20*log(abs(H));
 
-%Calc for Lowpass
-mag = 20*log10(abs(H));
-phase = angle(H)/pi;
+ang = angle(H/pi);
 
-%Plot
 figure;
 hold on
 subplot(2, 1, 1);
@@ -255,7 +245,7 @@ xlabel('Frequency (Hz)');
 ylabel('Output (dB)');
     
 subplot(2, 1, 2);
-semilogx(freqRange, phase, LineWidth=1.5);
+semilogx(freqRange, ang, LineWidth=1.5);
 title('Bode Phase');
 xlabel('Frequency (Hz)');
 ylabel('Output (Radians)');
