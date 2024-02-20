@@ -190,14 +190,30 @@ output = output(1000:end);
 Pin = (1/samplePeriod) * sum(sq(1:end).^2);
 Pout = (1/samplePeriod) * sum(output(1:end).^2);
 
-
-%Pin = (1/samplePeriod) * sum(sq(end-sampleFreq*(1/frequency):end).^2);
-% 218 ish datapoints per period
-
-%Pout = (1/samplePeriod) * sum(output(end-sampleFreq*(1/frequency):end).^2);
-
 efficiency = Pout/Pin;
-fprintf('Efficiency: %f\n', efficiency)
+fprintf('Efficiency Via Integral: %f\n', efficiency*100)
+
+% Calculate via Fourier Coeffs
+
+P_output = 0; % Initialize output power
+% Given parameters
+
+% Calculate power in the 60Hz component of the square wave
+Pfs = 0; 
+for n = 1:2:frequency*2 % odd harmonics only
+    Pfs = Pfs + (1/n^2); % Summing up the powers of individual harmonics
+end
+
+% Calculate efficiency
+efficiency = P_output / Pfs;
+
+fprintf('Efficiency of the circuit compared to theoretical maximum: %.2f%%\n', efficiency * 100);
+
+
+% Calculate efficiency
+efficiency = P_output / (length(freqRange) * Pfs);
+
+
 
 %% Part 3B : Bode Plot
 freqRange = logspace(1,4,100);
@@ -212,7 +228,9 @@ for i = 1:length(freqRange)
     in = inputFunct;
     % Pass signal through RC Lowpass filter 6 separate times
     for j = 1:6
-    output = filter(b, a, in);
+        
+    output = lsim(1/tau , [1 ,1/tau], in,sampleTimes);
+
     
     in = output;
     end
@@ -225,7 +243,7 @@ end
 
 %Calc for Lowpass
 mag = 20*log10(abs(H));
-phase = angle((H)/pi);
+phase = angle(H)/pi;
 
 %Plot
 figure;
@@ -243,16 +261,3 @@ xlabel('Frequency (Hz)');
 ylabel('Output (Radians)');
 sgtitle('Bode Plot Output of DC to AC Converter with Varying Frequency');
 hold off
-%%
-frequency = 2;          % Frequency of the square wave in Hz
-duration = 1;           % Duration of the square wave in seconds
-num_samples = 1000;     % Number of samples
-
-% Time vector
-t = linspace(0, duration, num_samples);
-
-% Create square wave using complex exponentials
-sq = zeros(size(t));
-for n = 1:2:11  % Consider only odd harmonics for simplicity
-    sq = sq + (1/n) * exp(1j * 2 *pi * frequency * n * t);
-end
